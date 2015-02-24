@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Rijkswaterstaat Strooit</title>
+    <meta charset="utf-8">
+    <meta name="viewport"content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+
+      #map {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+      }
+
+      #info {
+        font-size: 30px;
+        color: black;
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        background-color: white;
+        border-radius: 4px;
+        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.65);
+        padding: 8px;
+      }
+
+      a, a:visited {
+        color: black;
+      }
+      </style>
+  </head>
+  <body>
+  	</header>
+    <div id="map"></div>
+    <div id="info">
+      <img src="tractor.png" width="30px" />
+      <a href="http://www.rijkswaterstaatstrooit.nl/">Rijkswaterstaat Strooit</a>, but using <a href="http://leafletjs.com/">Leaflet</a> and <a href="https://www.mapbox.com/blog/winter-wonderland/">OpenStreetMap</a>.
+    </div>
+    <script>
+      // Rijkswaterstaat Strooit, with Google Maps...
+      // http://www.rijkswaterstaatstrooit.nl/
+      // Let's use Leaflet and OpenStreetMap!
+
+      // Stolen from https://www.mapbox.com/blog/winter-wonderland/ ...
+      var mapId = "andreasviglakis.76e0cee7",
+          accessToken = 'pk.eyJ1IjoiYW5kcmVhc3ZpZ2xha2lzIiwiYSI6IlVremRqN0kifQ.CFFJsLuWWyuhgsZTb51jWg',
+          tileUrl = "https://{s}.tiles.mapbox.com/v4/" + mapId + "/{z}/{x}/{y}.png?access_token=" + accessToken,
+          map = L.map('map', {maxZoom: 17}),
+          vehicle = L.icon({
+            iconUrl: 'tractor.png',
+            iconSize:     [32, 32],
+            iconAnchor:   [16, 16],
+            popupAnchor:  [32, 0]
+          });
+
+
+      // URL with JSON containing real-time position of Rijkswaterstaat's winter service vehicles:
+      var rwsUrl = "http://www.rijkswaterstaatstrooit.nl/include/query.php";
+
+      // Rijkswaterstaat does not have CORS enabled...
+      // Luckily, there is https://jsonp.nodejitsu.com/
+      var url = "https://jsonp.nodejitsu.com/?url=" + rwsUrl;
+
+      L.tileLayer(tileUrl).addTo(map);
+
+      var geojsonLayer = L.geoJson(null, {
+        pointToLayer: function (feature, latlng) {
+          return L.marker(latlng, {icon: vehicle});
+        }
+      }).addTo(map);
+
+      map.setView([52.3728, 4.9002], 10);
+
+      function update () {
+        d3.json(url, function(json) {
+          // json is object containing vehicle positions:
+          // "218320013": [
+          //   [
+          //     "52.72648700",
+          //     "5.75918000",
+          //     "34",
+          //     "2015-02-24 14:51:31"
+          //   ]
+          // ]
+
+          var features = [];
+          Object.keys(json).forEach(function(key) {
+            var item = json[key][0];
+            features.push({
+              type: "Feature",
+              properties: {
+                id: item[2],
+                timestamp: item[3]
+              },
+              geometry: {
+                type: "Point",
+                coordinates: [parseFloat(item[1]), parseFloat(item[0])]
+              }
+            });
+
+          });
+
+          geojsonLayer.clearLayers();
+          geojsonLayer.addData({
+            type: "FeatureCollection",
+            features: features
+          });
+        });
+      }
+
+      setInterval(update, 100000);
+      update();
+    </script>
+  </body>
+</html>
