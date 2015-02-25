@@ -20,7 +20,7 @@
       }
 
       #info {
-        font-size: 30px;
+        font-size: 18px;
         color: black;
         position: absolute;
         bottom: 20px;
@@ -29,6 +29,21 @@
         border-radius: 4px;
         box-shadow: 0 1px 5px rgba(0, 0, 0, 0.65);
         padding: 8px;
+        width: 850px;
+      }
+
+      #info h4 {
+        display: inline;
+        font-size: 25px;
+      }
+
+      #info p {
+        padding-top: 3px;
+      }
+
+      #maptime {
+        float: right;
+        padding-left: 20px;
       }
 
       a, a:visited {
@@ -40,8 +55,15 @@
   	</header>
     <div id="map"></div>
     <div id="info">
-      <img src="tractor.png" width="30px" />
-      <a href="http://www.rijkswaterstaatstrooit.nl/">Rijkswaterstaat Strooit</a>, but using <a href="http://leafletjs.com/">Leaflet</a> and <a href="https://www.mapbox.com/blog/winter-wonderland/">OpenStreetMap</a>.
+      <p>
+        <h4>
+          <a href="http://www.rijkswaterstaatstrooit.nl/">Rijkswaterstaat Strooit</a>, but using <a href="http://leafletjs.com/">Leaflet</a> and <a href="https://www.mapbox.com/blog/winter-wonderland/">OpenStreetMap</a>.
+        </h4>
+        <a id="maptime" href="http://maptime-ams.github.io/"><img src="maptime.png" /></a>
+      </p>
+      <p>
+        This map shows the real-time positions of Rijkswaterstaat's winter service vehicles, and refreshes every 20 seconds. <img src="tractor.png" height="17px" /> are trucks on duty; <img src="tractor-gray.png" height="17px" /> are waiting for snow in their depot. Come to <a href="http://maptime-ams.github.io/">Maptime Amsterdam</a>'s next Meetup to learn how to make interactive maps yourself!
+      </p>
     </div>
     <script>
       // Rijkswaterstaat Strooit, with Google Maps...
@@ -53,8 +75,14 @@
           accessToken = 'pk.eyJ1IjoiYW5kcmVhc3ZpZ2xha2lzIiwiYSI6IlVremRqN0kifQ.CFFJsLuWWyuhgsZTb51jWg',
           tileUrl = "https://{s}.tiles.mapbox.com/v4/" + mapId + "/{z}/{x}/{y}.png?access_token=" + accessToken,
           map = L.map('map', {maxZoom: 17}),
-          vehicle = L.icon({
+          tractor = L.icon({
             iconUrl: 'tractor.png',
+            iconSize:     [32, 32],
+            iconAnchor:   [16, 16],
+            popupAnchor:  [32, 0]
+          }),
+          tractorGray = L.icon({
+            iconUrl: 'tractor-gray.png',
             iconSize:     [32, 32],
             iconAnchor:   [16, 16],
             popupAnchor:  [32, 0]
@@ -72,7 +100,11 @@
 
       var geojsonLayer = L.geoJson(null, {
         pointToLayer: function (feature, latlng) {
-          return L.marker(latlng, {icon: vehicle});
+          if (feature.properties.status == 34) {
+            return L.marker(latlng, {icon: tractorGray});
+          } else {
+            return L.marker(latlng, {icon: tractor});
+          }
         }
       }).addTo(map);
 
@@ -96,7 +128,7 @@
             features.push({
               type: "Feature",
               properties: {
-                id: item[2],
+                status: parseInt(item[2]),
                 timestamp: item[3]
               },
               geometry: {
